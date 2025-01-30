@@ -1,0 +1,3 @@
+torch  # we used version 2.0.1+cu117
+scikit-learn  # we used version 1.2.2 
+pre-commit==2.20.0

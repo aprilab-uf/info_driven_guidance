@@ -1,0 +1,33 @@
+<launch>
+    <!--Launches everything needed to run the real turtlebot-->
+
+    <!--Change default to the name of the rigid body you are tracking in optitrak-->
+    <arg name="rigid_body"  default="rail"/>
+
+    <!--Node that converts optitrak data to more user friendly forms: NWU & NED pose message topics-->
+    <node pkg="ros_vrpn_client" name="$(arg rigid_body)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen"/>
+
+    <!--Turns on physical turtlebot-->
+    <include file = "$(find turtlebot_bringup)/launch/minimal.launch" />
+
+    <!--Namespace used to group relevant topics together to prevent overlap when using multiple agents-->
+    <group ns = "$(arg rigid_body)">
+
+        <!--turtlebot PID-->
+        <!--<node pkg="andres_turtlebot_pid" name="turtlebot_pid" type="turtlebot_pid.py" output="screen">-->
+            <!--<param name='is_sim' value='false'/>-->
+        <node pkg="rospy_turtlebot_pid" name="pid_controller" type="controller_node.py" output="screen">
+            <remap from="agent_pose" to="/$(arg rigid_body)/nwu/pose_stamped" />
+            <remap from="target_pose" to="/$(arg rigid_body)/goal_pose" />
+            <remap from="pub_info" to="/mobile_base/commands/velocity"/>
+            <rosparam file="$(find rospy_turtlebot_pid)/config/params.yaml" />
+        </node>
+
+		<!-- Launches the turtlebot trajectory generator (road network)-->
+		<node pkg="mml_guidance" name="markov_goal_pose" type="markov_goal_pose.py" output="screen">
+			<remap from="agent_pose" to="/$(arg rigid_body)/nwu/pose_stamped" />
+			<remap from="/goal_pose" to="/rail/goal_pose"/>
+		</node>
+    </group>
+
+</launch>

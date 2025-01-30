@@ -1,0 +1,57 @@
+<launch>
+	<!-- Launches everything needed for running the real quadcopter -->
+
+    <arg name="use_camera" default="true"/>
+
+    <arg name="vehicle" default="takahe"/>
+    <arg name="vehicle_type" default="quad"/>
+    <arg name="run_estimator" default="true"/>
+
+    <arg name="control_mode" value="velocity_altitude"/>
+    <arg name="bag_name" default="mml_guidance"/>
+
+	<!-- Launches rosflight autopilot to fly quad -->
+    <node name="rosflight" pkg="rosflight" type="rosflight_io" output="screen">
+        <param name="port" value="/dev/ttyACM0"/>
+    </node>
+
+	<!-- Launches the reef estimator to get pose estimates of quad -->
+    <rosparam command="load" file="$(find reef_estimator)/params/dodo_camera.yaml" />
+    <node if="$(arg run_estimator)" name="reef_estimator" pkg="reef_estimator" type="reef_estimator" output="log">
+        <rosparam file="$(find reef_estimator)/params/xy_est_params.yaml" />
+        <rosparam file="$(find reef_estimator)/params/z_est_params.yaml" />
+        <rosparam file="$(find reef_estimator)/params/basic_params.yaml" />
+        <rosparam>
+            enable_rgbd: false
+            enable_sonar: false
+            enable_mocap_xy: true
+            enable_mocap_z: true
+        </rosparam>
+        <remap from="mocap_ned" to="pose_stamped"/>
+        <remap from="mocap_velocity/body_level_frame" to="velocity/body_level_frame"/>
+        <remap from="rgbd_velocity_body_frame" to="rgbd_to_velocity/body_level_frame"/>
+    </node>
+
+    <node name="pose_to_vel" pkg="position_to_velocity" type="position_to_velocity_node" output="log" >
+        <rosparam command="load" file="$(find position_to_velocity)/params/basic.yaml" />
+    </node>
+
+    <!--Node that converts optitrak data to more user friendly forms: NWU & NED pose message topics-->
+    <node pkg="ros_vrpn_client" name="$(arg vehicle)" type="ros_vrpn_client" args="_vrpn_server_ip:=192.168.1.104" required="true" output="screen">
+        <remap from="$(arg vehicle)/ned/pose_stamped" to="pose_stamped"/>
+    </node>
+
+	<!-- Launches PID controller (we also use DNAC but it is run with another terminal)-->
+    <rosparam file="$(find reef_adaptive_control)/params/$(arg vehicle_type)_pid.yaml" />
+    <node name="reef_control_pid" pkg="reef_adaptive_control" type="pid_control_node" output="screen"/>
+
+	<!-- Launches guidance node -->
+  	<param name="is_viz" value="true"/>
+  	<param name="is_sim" value="false"/>
+	<node pkg="mml_guidance" name="drone_guidance" type="guidance.py" output="screen">
+	  <remap from='/turtle_pose_stamped' to='/rail/nwu/pose_stamped'/>
+	  <remap from='/quad_pose_stamped' to='/takahe/nwu/pose_stamped'/>
+	</node>
+
+    <include if="$(arg use_camera)" file="$(find realsense2_camera)/launch/rs_camera.launch"/>
+</launch>

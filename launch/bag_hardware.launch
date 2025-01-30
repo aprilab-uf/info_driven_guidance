@@ -1,0 +1,10 @@
+<launch>
+	<arg name="prefix_name" default="hardware"/>
+    <arg name="bag_name" default="$(find mml_guidance)/hardware_data/$(arg prefix_name)"/>
+
+	<!-- record the bag file. Change -o to -O for only prefix instead of full name with datetime -->
+  	<node name="record" pkg="rosbag" type="record" args="-o $(arg bag_name) /xyTh_estimate
+	/odom /n_eff_particles /takahe/nwu/pose_stamped /rail/nwu/pose_stamped /entropy
+	/err_tracking /err_estimation /eer_time /desired_state /is_update /info_gain /camera/color/image_raw
+	/fov_coord /des_fov_coord"/>
+</launch>

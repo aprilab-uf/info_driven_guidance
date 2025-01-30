@@ -1,0 +1,14 @@
+<launch>
+    <!-- launch the quadcopter and the turtlebot with the guidance nodes -->
+    <include file="$(find mml_guidance)/launch/visualization.launch" />
+
+    <!-- bags topics-->
+	<arg name="prefix_name" default="sim"/>
+    <arg name="bag_name" default="$(find mml_guidance)/sim_data/$(arg prefix_name)"/>
+
+	<!-- record the bag file. Change -o to -O for only prefix instead of full name with datetime -->
+  	<node name="record" pkg="rosbag" type="record" args="-o $(arg bag_name) /xyTh_estimate
+	/n_eff_particles /robot0/odom multirotor/truth/NWU /entropy /err_tracking /err_estimation
+	/eer_time /desired_state /is_update /info_gain /camera/color/image_raw /fov_coord
+	/des_fov_coord"/>
+</launch>

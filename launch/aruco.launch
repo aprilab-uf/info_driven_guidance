@@ -1,0 +1,21 @@
+<!-- Currently NOT used -->
+<launch>
+	<arg name="aruco_name"            value="/aruco"/>
+
+	<!-- launches the aruco node that publishes relative pose if robot is in FOV of drone -->
+	<group ns="$(arg aruco_name)" >
+        <rosparam command="load" file="$(find verify_aruco)/params/body_to_camera.yaml" />
+        <!--<rosparam command="load" file="$(find verify_aruco)/params/boardbody_to_aruco.yaml" />-->
+		<node pkg="verify_aruco" name="verify_aruco_tf" type="verify_aruco" output="screen">
+		<param name ="send_gps" value="true"/>
+			<remap from="tf_cam_sim" to="/multirotor/truth/NWU"/>
+			<remap from="tf_calib_sim" to="/robot0/odom"/>
+			<!--<remap from="tf_estimate_cam" to="/quad/pose_stamped"/>-->
+			<param name="publishing_frequency" value="24"/> <!--rate of the charuco published data: 24 is considered as the human eye rate-->
+			<param name="azimuth_threshold" value="3.1"/> <!--yaw detection threshold in rad from logitech website (69 deg)-->
+			<param name="elevation_threshold" value="3.1"/> <!-- x,y detection threshold in rad from logitech website (42 deg)-->
+			<param name="z_threshold" value="3.0"/> <!--altitude detection threshold in meter-->
+		</node>
+	</group>
+
+</launch>
